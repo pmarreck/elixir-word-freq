@@ -27,6 +27,10 @@ defmodule Words do
   def alphabetic?(230), do: true
   def alphabetic?(_), do: false
 
+  # def numeric?(c) do
+  #   c in ?0..?9
+  # end
+
   def numeric?(c) when c in ?0..?9, do: true
   def numeric?(_), do: false
 
@@ -67,7 +71,10 @@ if System.argv |> List.first == "bench" do
       |> Kernel./(1_000_000)
     end
   end
+  IO.puts "Benchmark for 'load!':"
   IO.puts Benchmark.measure(fn -> Words.load!("data/Zen.txt") end)
+  IO.puts "Benchmark for 'load':"
+  IO.puts Benchmark.measure(fn -> Words.load("data/Zen.txt") end)
 end
 
 # run this inline suite with "elixir #{__ENV__.file} test"
