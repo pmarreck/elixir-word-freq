@@ -40,10 +40,12 @@ defmodule Words do
 
   # Note: The regex chews most of the time here.
   def load(file) do
-    punctuation = ~r/[^[:alnum:]]/u
+    punctuation = ~r/[[:punct:]]/u # Regex.compile("[[:punct:]]",[:unicode]) to exclude :ucp option
     words = File.read!(file) |>
-      String.downcase |> String.replace(punctuation, " ") |> String.splitter(" ", trim: true)
-    words |> word_filter
+      String.downcase |> String.replace(punctuation, " ") |> String.split
+      |> word_filter
+    # IO.inspect words
+    words
   end
 
   def word_filter(words) do
@@ -56,7 +58,7 @@ defmodule Words do
     Enum.map(fn c -> if alphanumeric?(c), do: c, else: " " end) |>
     to_string |>
     String.downcase |>
-    String.splitter(" ", trim: true) |>
+    String.split |>
     word_filter
   end
 end
