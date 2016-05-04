@@ -22,21 +22,38 @@ defmodule Words do
   #   c == 230
   # end
 
-  def alphabetic?(c) when c in ?a..?z, do: true
-  def alphabetic?(c) when c in ?A..?Z, do: true
-  def alphabetic?(230), do: true
-  def alphabetic?(_), do: false
+  # def alphabetic?(c) when c in ?a..?z, do: true
+  # def alphabetic?(c) when c in ?A..?Z, do: true
+  # def alphabetic?(230), do: true
+  # def alphabetic?(_), do: false
 
   # def numeric?(c) do
   #   c in ?0..?9
   # end
 
-  def numeric?(c) when c in ?0..?9, do: true
+  # def numeric?(c) when c in ?0..?9, do: true
+  # def numeric?(_), do: false
+
+  def alphabetic?(<<c::utf8, rest::binary>>) when c in 0x0041..0x005A, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c in 0x0061..0x007A, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c == 0x00AA, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c == 0x00B5, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c == 0x00BA, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c in 0x00C0..0x00D6, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c in 0x00D8..0x00F6, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<c::utf8, rest::binary>>) when c in 0x00F8..0x01BA, do: alphabetic?(<<rest::binary>>)
+  def alphabetic?(<<>>), do: true
+  def alphabetic?(_), do: false
+
+  def numeric?(<<c::utf8, rest::binary>>) when c in ?-..?9, do: numeric?(<<rest::binary>>)
+  def numeric?(<<>>), do: true
   def numeric?(_), do: false
 
-  def alphanumeric?(c) do
-    numeric?(c) || alphabetic?(c)
+  def alphanumeric?(<<c::utf8, rest::binary>>) do
+    (numeric?(<<c::utf8>>) || alphabetic?(<<c::utf8>>)) && alphanumeric?(<<rest::binary>>)
   end
+  def alphanumeric?(<<>>), do: true
+  def alphanumeric?(_), do: false
 
   # Note: The regex chews most of the time here.
   def load(file) do
@@ -53,13 +70,15 @@ defmodule Words do
   end
 
   def load!(file) do
-    File.read!(file) |>
-    to_char_list |>
-    Enum.map(fn c -> if alphanumeric?(c), do: c, else: " " end) |>
-    to_string |>
-    String.downcase |>
-    String.split |>
-    word_filter
+    File.read!(file)
+    |> to_char_list
+    |> Enum.map(fn c -> if alphanumeric?(<<c::utf8>>), do: c, else: " " end)
+    |> to_string
+    # |> IO.inspect
+    |> String.downcase
+    |> String.split
+    |> word_filter
+    # |> IO.inspect
   end
 end
 
@@ -75,8 +94,8 @@ if System.argv |> List.first == "bench" do
   end
   IO.puts "Benchmark for 'load!':"
   IO.puts Benchmark.measure(fn -> Words.load!("data/Zen.txt") end)
-  IO.puts "Benchmark for 'load':"
-  IO.puts Benchmark.measure(fn -> Words.load("data/Zen.txt") end)
+  # IO.puts "Benchmark for 'load':"
+  # IO.puts Benchmark.measure(fn -> Words.load("data/Zen.txt") end)
 end
 
 # run this inline suite with "elixir #{__ENV__.file} test"
@@ -87,7 +106,23 @@ if System.argv |> List.first == "test" do
     use ExUnit.Case, async: true
 
     test "word_freq" do
-      assert %{"Four" => 1, "ago" => 1, "and" => 2, "four" => 1, "score" => 1, "seconds" => 1, "seven" => 1, "years" => 1} == Words.word_freq("Four score and seven years ago and four seconds" |> String.split(" "))
+      assert %{"Four" => 1, "ago" => 1, "and" => 2, "four" => 1, "score" => 1, "seconds" => 1, "seven" => 1, "years" => 1} == Words.word_freq("Four score and seven years ago and four seconds" |> String.split)
+    end
+
+    test "alphabetic?" do
+      assert Words.alphabetic?("ABCabc")
+    end
+
+    test "Phædrus is alphabetic" do
+      assert Words.alphabetic?("Phædrus")
+    end
+
+    test "numeric?" do
+      assert Words.numeric?("02573")
+    end
+
+    test "alphanumeric?" do
+      assert Words.alphanumeric?("a3CbD8")
     end
   end
 end
